@@ -21,12 +21,41 @@
             <rect x="40" y="22" width="10" height="14"></rect>
             <rect x="90" y="22" width="10" height="14"></rect>
           </g>
+          <g class="eyes-happy">
+            <rect x="35" y="32" width="4" height="4"></rect>
+            <rect x="39" y="28" width="4" height="4"></rect>
+            <rect x="43" y="24" width="4" height="4"></rect>
+            <rect x="47" y="28" width="4" height="4"></rect>
+            <rect x="51" y="32" width="4" height="4"></rect>
+            <rect x="85" y="32" width="4" height="4"></rect>
+            <rect x="89" y="28" width="4" height="4"></rect>
+            <rect x="93" y="24" width="4" height="4"></rect>
+            <rect x="97" y="28" width="4" height="4"></rect>
+            <rect x="101" y="32" width="4" height="4"></rect>
+          </g>
+          <g class="cheeks">
+            <rect x="28" y="42" width="10" height="6"></rect>
+            <rect x="102" y="42" width="10" height="6"></rect>
+          </g>
           <rect class="leg leg-a" x="28" y="60" width="8" height="24"></rect>
           <rect class="leg leg-b" x="44" y="60" width="8" height="24"></rect>
           <rect class="leg leg-a" x="88" y="60" width="8" height="24"></rect>
           <rect class="leg leg-b" x="104" y="60" width="8" height="24"></rect>
         </g>
+        <g id="hearts"></g>
       </svg>
+    </div>
+
+    <div class="affection">
+      <div class="affection-row">
+        <span class="affection-label">なかよし度</span>
+        <div class="gauge" id="gauge" role="progressbar" aria-label="なかよし度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="gauge-fill" id="gauge-fill"></div>
+        </div>
+        <span class="affection-value"><span id="affection-value">0</span> / 100</span>
+      </div>
+      <p class="hint">Clawd の上でドラッグして左右になでてみよう</p>
+      <p class="level-message" id="level-message" role="status"></p>
     </div>
 
     <div class="controls" role="group" aria-label="踊りの種類">
@@ -36,6 +65,15 @@
     </div>
 
     <button type="button" class="music-btn" id="music" aria-pressed="false">♪ 音楽 ON</button>
+
+    <div class="reset">
+      <button type="button" class="reset-btn" id="reset">なかよし度をリセット</button>
+      <div class="reset-confirm" id="reset-confirm" hidden>
+        <span>本当にリセットしますか？</span>
+        <button type="button" id="reset-yes">はい</button>
+        <button type="button" id="reset-no">いいえ</button>
+      </div>
+    </div>
   </main>
 
   <script src="script.js"></script>

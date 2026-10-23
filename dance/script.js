@@ -6,17 +6,24 @@ const danceButtons = document.querySelectorAll('.dance-btn');
 const musicButton = document.getElementById('music');
 
 let currentDance = 'sway';
+let interacting = false; // なでられている間と見送りの間は true
+
+// ステージのクラスを付け替え、アニメーションを最初から始め直す
+function setStageMode(mode) {
+  stage.className = 'stage';
+  void stage.offsetWidth; // クラスを外した状態を一度反映させる
+  stage.classList.add(mode);
+  if (affection >= 100) stage.classList.add('lv-max');
+}
 
 // ---- 踊りの切り替え ----
 
 function setDance(name) {
   currentDance = name;
-  stage.className = 'stage';
-  void stage.offsetWidth; // クラスを外した状態を一度反映させ、アニメーションを最初から始め直す
-  stage.classList.add('dance-' + name);
   danceButtons.forEach((btn) => {
     btn.setAttribute('aria-pressed', String(btn.dataset.dance === name));
   });
+  if (!interacting) setStageMode('dance-' + name);
 }
 
 danceButtons.forEach((btn) => {
@@ -126,3 +133,242 @@ musicButton.addEventListener('click', () => {
   if (timerId) stopMusic();
   else startMusic();
 });
+
+function isMusicOn() {
+  return timerId !== null;
+}
+
+function playChirp() {
+  const time = ctx.currentTime;
+  [1318.5, 1760].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const t = time + i * 0.07;
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  });
+}
+
+// ---- なかよし度 ----
+
+const STORAGE_KEY = 'clawd-affection';
+const LEVELS = [
+  { at: 30, message: 'なかよしになった！ 新しい反応: 手をふって見送る' },
+  { at: 60, message: 'もっとなかよしになった！ 新しい反応: くるっと回っておじぎ' },
+  { at: 100, message: '大好きになった！ ふだんからほっぺがピンクに' },
+];
+
+const gauge = document.getElementById('gauge');
+const gaugeFill = document.getElementById('gauge-fill');
+const affectionValue = document.getElementById('affection-value');
+const levelMessage = document.getElementById('level-message');
+
+let affection = loadAffection();
+let messageTimer = null;
+
+function loadAffection() {
+  try {
+    const n = Number(localStorage.getItem(STORAGE_KEY));
+    return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.floor(n))) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveAffection() {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(affection));
+  } catch (e) {
+    // 保存できない環境でも、その場では動き続ける
+  }
+}
+
+function renderAffection() {
+  gaugeFill.style.width = affection + '%';
+  affectionValue.textContent = affection;
+  gauge.setAttribute('aria-valuenow', String(affection));
+  stage.classList.toggle('lv-max', affection >= 100);
+}
+
+function showMessage(text) {
+  levelMessage.textContent = text;
+  clearTimeout(messageTimer);
+  messageTimer = setTimeout(() => { levelMessage.textContent = ''; }, 4000);
+}
+
+function addAffection() {
+  if (affection >= 100) return;
+  const before = affection;
+  affection += 1;
+  saveAffection();
+  renderAffection();
+  const reached = LEVELS.find((lv) => before < lv.at && affection >= lv.at);
+  if (reached) showMessage(reached.message);
+}
+
+// ---- なでる ----
+
+const clawd = stage.querySelector('.clawd');
+const svg = stage.querySelector('svg');
+const heartsLayer = document.getElementById('hearts');
+
+const MIN_SWING_PX = 15; // これより短い動きは往復として数えない
+const HAPPY_LINGER_MS = 1500; // 手を離してから見送りを始めるまで
+const WAVE_MS = 1800;
+const BOW_MS = 2000;
+
+let pointerId = null;
+let lastX = 0;
+let direction = 0; // 1: 右へ, -1: 左へ
+let swing = 0; // 今の向きに動いた距離
+let reversals = 0; // 向きが変わった回数（2回で1往復）
+let petting = false;
+let afterTimers = [];
+
+function clearAfterTimers() {
+  afterTimers.forEach(clearTimeout);
+  afterTimers = [];
+}
+
+function later(fn, ms) {
+  afterTimers.push(setTimeout(fn, ms));
+}
+
+// 画面上の距離を SVG の座標の距離に直す
+function toSvgUnits(px) {
+  return px * (svg.viewBox.baseVal.width / svg.getBoundingClientRect().width);
+}
+
+const HEART_PIXELS = [
+  '.XX.XX.',
+  'XXXXXXX',
+  'XXXXXXX',
+  '.XXXXX.',
+  '..XXX..',
+  '...X...',
+];
+
+function spawnHeart() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const outer = document.createElementNS(ns, 'g');
+  const x = 30 + Math.random() * 70;
+  const y = -14 - Math.random() * 10;
+  outer.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+  const heart = document.createElementNS(ns, 'g');
+  heart.setAttribute('class', 'heart');
+  HEART_PIXELS.forEach((row, r) => {
+    [...row].forEach((c, col) => {
+      if (c !== 'X') return;
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', col * 3);
+      rect.setAttribute('y', r * 3);
+      rect.setAttribute('width', 3);
+      rect.setAttribute('height', 3);
+      heart.appendChild(rect);
+    });
+  });
+  outer.appendChild(heart);
+  heartsLayer.appendChild(outer);
+  heart.addEventListener('animationend', () => outer.remove());
+  setTimeout(() => outer.remove(), 2000); // アニメーションが止められている環境向け
+}
+
+function startPetting() {
+  petting = true;
+  interacting = true;
+  clearAfterTimers();
+  setStageMode('petting');
+}
+
+function onStroke() {
+  addAffection();
+  spawnHeart();
+  if (isMusicOn()) playChirp();
+}
+
+// 手を離したあと: 少し喜びを残し、段階に応じて見送ってから踊りに戻る
+function finishPetting() {
+  petting = false;
+  setStageMode('happy');
+  const steps = [];
+  if (affection >= 60) steps.push(['farewell-bow', BOW_MS]);
+  if (affection >= 30) steps.push(['farewell-wave', WAVE_MS]);
+  let t = HAPPY_LINGER_MS;
+  steps.forEach(([mode, ms]) => {
+    later(() => setStageMode(mode), t);
+    t += ms;
+  });
+  later(() => {
+    interacting = false;
+    setDance(currentDance);
+  }, t);
+}
+
+clawd.addEventListener('pointerdown', (e) => {
+  if (pointerId !== null) return;
+  pointerId = e.pointerId;
+  svg.setPointerCapture(pointerId);
+  lastX = e.clientX;
+  direction = 0;
+  swing = 0;
+  reversals = 0;
+  e.preventDefault();
+});
+
+svg.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== pointerId) return;
+  const dx = toSvgUnits(e.clientX - lastX);
+  lastX = e.clientX;
+  if (dx === 0) return;
+  const dir = dx > 0 ? 1 : -1;
+  if (dir === direction) {
+    swing += Math.abs(dx);
+    return;
+  }
+  if (direction !== 0 && swing >= MIN_SWING_PX) {
+    reversals += 1;
+    if (!petting && reversals >= 2) startPetting();
+    if (petting && reversals % 2 === 0) onStroke();
+  }
+  direction = dir;
+  swing = Math.abs(dx);
+});
+
+function endPointer(e) {
+  if (e.pointerId !== pointerId) return;
+  pointerId = null;
+  if (petting) finishPetting();
+}
+
+svg.addEventListener('pointerup', endPointer);
+svg.addEventListener('pointercancel', endPointer);
+
+// ---- リセット ----
+
+const resetButton = document.getElementById('reset');
+const resetConfirm = document.getElementById('reset-confirm');
+
+resetButton.addEventListener('click', () => {
+  resetButton.hidden = true;
+  resetConfirm.hidden = false;
+});
+
+document.getElementById('reset-no').addEventListener('click', () => {
+  resetConfirm.hidden = true;
+  resetButton.hidden = false;
+});
+
+document.getElementById('reset-yes').addEventListener('click', () => {
+  affection = 0;
+  saveAffection();
+  renderAffection();
+  resetConfirm.hidden = true;
+  resetButton.hidden = false;
+});
+
+renderAffection();

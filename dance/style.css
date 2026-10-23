@@ -7,6 +7,11 @@
   --btn-bg: #ffffff;
   --btn-border: #d8d0c4;
   --shadow: rgba(0, 0, 0, 0.12);
+  --cheek: #f4a3a8;
+  --heart: #e8677a;
+  --heart-text: #c2475b;
+  --gauge-bg: #e6ddd0;
+  --muted: #6f6a63;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,6 +21,9 @@
     --btn-bg: #2b2a28;
     --btn-border: #4a4743;
     --shadow: rgba(0, 0, 0, 0.45);
+    --heart-text: #f28b9b;
+    --gauge-bg: #3a3835;
+    --muted: #a9a39a;
   }
 }
 
@@ -141,6 +149,145 @@ h1 {
   50% { transform: rotate(-20deg); }
   75% { transform: rotate(-60deg); }
 }
+
+/* ---- なでられて喜ぶ ---- */
+
+.clawd { cursor: grab; }
+.stage svg { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.eyes-happy rect { fill: var(--eye); }
+.cheeks rect { fill: var(--cheek); }
+.eyes-happy, .cheeks { opacity: 0; transition: opacity 0.15s; }
+
+/* なかよし度 100: ふだんからほっぺがうっすらピンク（喜んでいるときの指定が後に来て上書きする） */
+.lv-max .cheeks { opacity: 0.45; }
+
+/* 喜んでいる間と見送りの間は、目を ^ ^ にしてほっぺを出す */
+.petting .eyes, .happy .eyes, .farewell-wave .eyes, .farewell-bow .eyes { opacity: 0; }
+.petting .eyes-happy, .happy .eyes-happy, .farewell-wave .eyes-happy, .farewell-bow .eyes-happy,
+.petting .cheeks, .happy .cheeks, .farewell-wave .cheeks, .farewell-bow .cheeks { opacity: 1; }
+
+.petting .clawd     { cursor: grabbing; animation: wiggle 0.16s ease-in-out infinite; }
+.petting .arm-left  { animation: flap-left 0.2s ease-in-out infinite alternate; }
+.petting .arm-right { animation: flap-right 0.2s ease-in-out infinite alternate; }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-2deg) scale(1.02, 0.98); }
+  50% { transform: rotate(2deg) scale(0.98, 1.02); }
+}
+
+@keyframes flap-left {
+  from { transform: rotate(-15deg); }
+  to { transform: rotate(35deg); }
+}
+
+@keyframes flap-right {
+  from { transform: rotate(15deg); }
+  to { transform: rotate(-35deg); }
+}
+
+/* なかよし度 30〜: 手をふって見送る */
+.farewell-wave .arm-right { animation: wave-bye 0.6s ease-in-out 3; }
+
+@keyframes wave-bye {
+  0%, 100% { transform: rotate(-60deg); }
+  50% { transform: rotate(-110deg); }
+}
+
+/* なかよし度 60〜: くるっと回っておじぎ */
+.farewell-bow .clawd { animation: spin-bow 2s ease-in-out 1; }
+
+@keyframes spin-bow {
+  0% { transform: scaleX(1); }
+  15% { transform: scaleX(-1); }
+  30% { transform: scaleX(1); }
+  45%, 75% { transform: translateY(8px) scale(1.06, 0.8); }
+  100% { transform: none; }
+}
+
+.heart rect { fill: var(--heart); }
+.heart { transform-box: fill-box; transform-origin: 50% 100%; animation: heart-float 1.1s ease-out forwards; }
+
+@keyframes heart-float {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { transform: translateY(-6px) scale(1); opacity: 1; }
+  100% { transform: translateY(-46px) scale(1); opacity: 0; }
+}
+
+/* ---- なかよし度 ---- */
+
+.affection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.affection-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.affection-label { font-size: 0.9rem; white-space: nowrap; }
+
+.gauge {
+  flex: 1;
+  min-width: 0;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--gauge-bg);
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  width: 0;
+  background: var(--heart);
+  transition: width 0.3s ease-out;
+}
+
+.affection-value {
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hint, .level-message { margin: 0; font-size: 0.85rem; }
+.hint { color: var(--muted); }
+/* メッセージが出たり消えたりしてもページの高さが変わらないよう、2行分を確保する */
+.level-message { min-height: 2.6em; font-weight: 700; color: var(--heart-text); text-wrap: balance; }
+
+.reset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.reset-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.reset-btn {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+[hidden] { display: none !important; }
 
 /* ---- ボタン ---- */
 
