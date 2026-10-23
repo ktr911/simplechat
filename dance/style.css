@@ -1,0 +1,174 @@
+:root {
+  --beat: 0.5s; /* テンポ120 の1拍 */
+  --clawd: #d97757;
+  --eye: #1f1e1d;
+  --bg: #f5f0e8;
+  --text: #1f1e1d;
+  --btn-bg: #ffffff;
+  --btn-border: #d8d0c4;
+  --shadow: rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1e1d;
+    --text: #f5f0e8;
+    --btn-bg: #2b2a28;
+    --btn-border: #4a4743;
+    --shadow: rgba(0, 0, 0, 0.45);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+main {
+  width: 100%;
+  max-width: 480px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+}
+
+.stage svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* ---- キャラクター ---- */
+
+.body, .arm, .leg { fill: var(--clawd); }
+.eyes rect { fill: var(--eye); }
+.shadow { fill: var(--shadow); }
+
+/* SVG 内のパーツを自分の箱基準で回転・拡大させる */
+.clawd, .arm, .leg, .eyes, .shadow {
+  transform-box: fill-box;
+}
+.clawd  { transform-origin: 50% 100%; }
+.arm-left  { transform-origin: 100% 50%; }
+.arm-right { transform-origin: 0% 50%; }
+.leg    { transform-origin: 50% 0%; }
+.eyes   { transform-origin: 50% 50%; animation: blink 4s infinite; }
+.shadow { transform-origin: 50% 50%; }
+
+@keyframes blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+/* ---- ゆらゆら：体を左右に傾け、脚を交互に上げる（2拍で1周） ---- */
+
+.dance-sway .clawd { animation: sway calc(var(--beat) * 2) ease-in-out infinite; }
+.dance-sway .leg-a { animation: leg-step calc(var(--beat) * 2) ease-in-out infinite; }
+.dance-sway .leg-b { animation: leg-step calc(var(--beat) * 2) ease-in-out infinite calc(var(--beat) * -1); }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes leg-step {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-6px) scaleY(0.75); }
+}
+
+/* ---- ジャンプ：つぶれてから跳ね、頂点で腕を上げる（1拍で1回） ---- */
+
+.dance-jump .clawd     { animation: jump var(--beat) ease-in-out infinite; }
+.dance-jump .arm-left  { animation: arm-up-left var(--beat) ease-in-out infinite; }
+.dance-jump .arm-right { animation: arm-up-right var(--beat) ease-in-out infinite; }
+.dance-jump .shadow    { animation: shadow-jump var(--beat) ease-in-out infinite; }
+
+@keyframes jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  15% { transform: translateY(0) scale(1.12, 0.82); }
+  50% { transform: translateY(-40px) scale(0.94, 1.08); }
+  85% { transform: translateY(0) scale(1.08, 0.9); }
+}
+
+@keyframes arm-up-left {
+  0%, 15%, 85%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(50deg); }
+}
+
+@keyframes arm-up-right {
+  0%, 15%, 85%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-50deg); }
+}
+
+@keyframes shadow-jump {
+  0%, 15%, 85%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.6); opacity: 0.5; }
+}
+
+/* ---- 手ふり：小さく弾みながら、両腕を交互に振る ---- */
+
+.dance-wave .clawd     { animation: bounce var(--beat) ease-in-out infinite; }
+.dance-wave .arm-left  { animation: wave-left calc(var(--beat) * 2) ease-in-out infinite; }
+.dance-wave .arm-right { animation: wave-right calc(var(--beat) * 2) ease-in-out infinite calc(var(--beat) * -1); }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes wave-left {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(60deg); }
+  50% { transform: rotate(20deg); }
+  75% { transform: rotate(60deg); }
+}
+
+@keyframes wave-right {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-60deg); }
+  50% { transform: rotate(-20deg); }
+  75% { transform: rotate(-60deg); }
+}
+
+/* ---- ボタン ---- */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+
+button {
+  font: inherit;
+  font-size: 1rem;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button[aria-pressed="true"] {
+  background: var(--clawd);
+  border-color: var(--clawd);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage * { animation-duration: calc(var(--beat) * 8) !important; }
+}
